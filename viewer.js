@@ -71,8 +71,8 @@
     const center=[(lo[0]+hi[0])/2,.5,(lo[1]+hi[1])/2],radius=Math.hypot(hi[0]-lo[0],hi[1]-lo[1])/2;
     let selected='orbit',lastCamera=null;
     const fields=Object.fromEntries(['walls','frames','names','low','structure','glass','ceiling','details','displays'].map(id=>[id,{checked:!['low','ceiling'].includes(id)}]));
-    const mobileControls=MuseumMobileControls(canvas,controls,{onGroundTap:(x,y)=>waypointControls.tapGround(x,y)});
-    const waypointControls=MuseumShiftNavigation(canvas,controls,collision,model,destination=>{
+    const mobileControls=MuseumMobileControls(canvas,controls);
+    const waypointControls=MuseumPointNavigation(canvas,controls,collision,model,destination=>{
       const start=lastCamera||controls.camera(),pose={yaw:controls.state.yaw,pitch:controls.state.pitch,fov:controls.state.fov};
       const path=MuseumPathfinding.find(controls.camera().eye,destination,collision);if(!path)return;
       const lengths=[0];for(let i=1;i<path.length;i++)lengths.push(lengths[i-1]+Math.hypot(...path[i].map((v,k)=>v-path[i-1][k])));

@@ -68,6 +68,10 @@ window.MuseumGeometry = (()=>{
         if(o.kind==='recess'){
           const dir=o.recessDirection||[0,-1],back=p=>p.map((v,k)=>v+dir[k]*(t/2-.035));
           span(w.id+'-recess-back-'+i,back(at(o.from)),back(at(o.to)),sill,o.height,.07,wallColor,'wall',w.room);
+          if(o.glazed){
+            const front=p=>p.map((v,k)=>v-dir[k]*(t/2+.012));
+            span(w.id+'-recess-glass-'+i,front(at(o.from)),front(at(o.to)),sill,o.height,.018,[.62,.78,.79],'displayGlass',w.room);parts[parts.length-1].alpha=.12;
+          }
         }
         const length=Math.hypot(b[0]-a[0],b[1]-a[1]),trim=.06/length;
         if(o.kind!=='recess'){
@@ -164,6 +168,28 @@ window.MuseumGeometry = (()=>{
       span(t.id+'-apron',a,b,t.height-.22,t.height-.14,t.depth-.10,[.37,.23,.14],'displays',t.room);
       parts.push({id:t.id+'-pedestal',position:[center[0],(t.height-.22)/2,center[1]],size:[.55,t.height-.22,.48],yaw,color:[.34,.23,.16],group:'displays',room:t.room});
       parts.push({id:t.id+'-foot',position:[center[0],.035,center[1]],size:[.63,.07,.56],yaw,color:[.21,.22,.20],group:'displays',room:t.room});
+    }
+    // 곡면 액자는 벽의 실제 굴곡을 따라 연속 띠 메시로 만든다.
+    for(const f of data.curvedArtFrames||[]){
+      const path=f.path,width=.035,depth=.035,gap=.008,color=[.31,.28,.23];
+      const normals=path.map((p,i)=>{const a=path[Math.max(0,i-1)],b=path[Math.min(path.length-1,i+1)],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz);return [dz/l,-dx/l];});
+      const offset=(i,d)=>path[i].map((v,k)=>v+normals[i][k]*d/data.scale);
+      const belt=path.map((_,i)=>offset(i,gap)).concat(path.map((_,i)=>offset(i,gap+depth)).reverse());
+      for(const [name,y] of [['bottom',f.bottom],['top',f.top-width]])parts.push({id:f.id+'-'+name,mesh:extrude(belt,width),position:[0,y,0],size:[1,1,1],yaw:0,color,group:'details',room:f.room});
+      for(const [name,i,j] of [['left',0,1],['right',path.length-1,path.length-2]]){
+        const a=point(offset(i,gap+depth/2)),b=point(offset(j,gap+depth/2)),l=Math.hypot(b[0]-a[0],b[1]-a[1]);
+        span(f.id+'-'+name,a,a.map((v,k)=>v+(b[k]-v)*width/l),f.bottom+width,f.top-width,depth,color,'details',f.room);
+      }
+    }
+    // 얇은 액자 네 변만 생성한다. 뒤판/작품은 비워 벽면이 그대로 보인다.
+    for(const f of data.wallArtFrames||[]){
+      const thickness=.035,width=.035,color=[.31,.28,.23];
+      const offset=p=>point(p).map((v,i)=>v+f.inward[i]*(thickness/2+.008));
+      const a=offset(f.a),b=offset(f.b),len=Math.hypot(b[0]-a[0],b[1]-a[1]),at=t=>a.map((v,i)=>v+(b[i]-v)*t);
+      span(f.id+'-bottom',a,b,f.bottom,f.bottom+width,thickness,color,'details',f.room);
+      span(f.id+'-top',a,b,f.top-width,f.top,thickness,color,'details',f.room);
+      span(f.id+'-left',a,at(width/len),f.bottom+width,f.top-width,thickness,color,'details',f.room);
+      span(f.id+'-right',at(1-width/len),b,f.bottom+width,f.top-width,thickness,color,'details',f.room);
     }
     // 바닥까지 내려오지 않는 목재 벽걸이 진열장: 불투명 목재 함체와 전면 유리.
     for(const n of data.wallCases||[]){

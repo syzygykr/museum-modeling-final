@@ -2,6 +2,10 @@
 window.MuseumCollision=function(model,layout){
  const radius=.08,groups=['wall','frame','glass','structure','displays','displayGlass','details'];
  const boxes=model.parts.filter(p=>!p.mesh&&groups.includes(p.group));
+ for(const w of layout.navigationBarriers||[]){
+  const a=MuseumGeometry.point(w.a),b=MuseumGeometry.point(w.b);
+  boxes.push({position:[(a[0]+b[0])/2,w.height/2,(a[1]+b[1])/2],size:[Math.hypot(b[0]-a[0],b[1]-a[1]),w.height,w.thickness],yaw:-Math.atan2(b[1]-a[1],b[0]-a[0])});
+ }
  // 둥근 작업대 등 사용자 정의 상세 메시도 보수적인 경계 상자로 포함한다.
  // 머리 위 격자·아치는 아래의 몸체 높이 검사에서 제외된다.
  for(const p of model.parts.filter(p=>p.mesh&&['details','displays'].includes(p.group))){

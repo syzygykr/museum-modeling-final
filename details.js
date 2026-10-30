@@ -39,7 +39,7 @@
  // 체험마루 서측 통로 끝에서 야외 방향으로 이어지는 작은 유리문.
  d.shell.find(w=>w.id==='shell-bow-south').openings=[{from:.022,to:.085,height:2.18,kind:'glazed',divisions:1,note:'VR 통로 끝 유리문. 남측 벽의 위치와 폭은 사진 대응 근사'}];
  d.displays=[
-  {id:'bow-central-platform',at:[393,369],size:[2.4,.22,1.9],type:'platform',room:'bow'},
+  {id:'bow-central-platform',at:[(333+442-.08/d.scale)/2,369],size:[(442-333)*d.scale-.08,.22,2.6],topOverhang:0,type:'platform',room:'bow',evidence:'사용자 추가 지시: 서측 활 구조물 X333까지 빈 공간을 채움. 동측 끝은 뒤 벽 실내 면에 맞춤'},
   {id:'bow-north-case',at:[172,335],size:[2.0,.68,.60],type:'low',room:'bow'},
   {id:'donated-workbench',at:[1039,403],size:[.97,.78,.67],type:'platform',room:'donated'},
   {id:'donated-small-south',at:[1075,404],size:[.69,.68,.54],type:'low',room:'donated'},
@@ -118,7 +118,7 @@
  d.reliefDisplays=[{id:'bow-relief-wall',a:[550,315],b:[550,415],inward:[-1,0],depth:.24,bottom:.45,top:2.35,room:'bow',evidence:'사용자 2번 지시: 체험마루 서측 벽에 통합된 부조용 빈 전시부. 부조 자체는 생성하지 않음'}];
  // 기획전시실 앞 흰 구분벽과 오목한 전시부. 체험장 입구는 서측에 확보.
  d.walls.push(
-  {id:'immersive-west',a:[818,24],b:[818,175],thickness:.18,room:'immersive',evidence:'첨부 사진과 기존 상단 뷰의 우측 체험 영역 대응. 기존 보·기둥선 X818에 정렬',openings:[{from:.65,to:.95,height:2.30,kind:'opening',note:'상부 전시 영역에서 체험장으로 진입하는 열린 통로. 위치·폭 근사'}]},
+  {id:'immersive-west',a:[818,24],b:[818,175],thickness:.18,room:'immersive',evidence:'사용자 붉은 영역: 북측 벽면 전시대 끝까지 입구를 확장. 기존 남측 문설주와 상부 보는 유지',openings:[{from:26/151,to:.95,height:2.30,kind:'opening',note:'전시대 끝 Z50부터 기존 출입구 남측 끝까지 하나로 연결한 넓은 열린 입구'}]},
   {id:'immersive-front',a:[818,175],b:[1056,175],thickness:.50,room:'immersive',evidence:'첨부 촬영 사진의 기획전시실 앞 흰 분리벽. 오목한 전시부는 작품 없이 비움',openings:[{from:.34,to:.82,sill:.65,height:2.15,kind:'recess',recessDirection:[0,-1],note:'통과하는 문이 아닌 막힌 뒷면을 가진 벽 전시 홈. 모서리는 직각 근사'}]},
   {id:'immersive-east-return',a:[1056,175],b:[1056,118],thickness:.18,room:'immersive',evidence:'기존 외곽의 북동측 꺾임으로 구분벽을 연결. 측면 세부 길이는 근사'}
  );
@@ -179,6 +179,8 @@
  }
  Object.assign(d.galleryTables[0],{a:[400+.22/d.scale,175],b:[548-.22/d.scale,175]});
  Object.assign(d.galleryTables[1],{a:[548+.22/d.scale,175],b:[690-.22/d.scale,175]});
+ // 상단도 분홍 선: 테이블 양쪽 끝을 가로 구분벽의 바깥 끝(Z155~195)에 정렬.
+ for(const table of d.galleryTables)table.depth=(195-155)*d.scale;
  // 사용자 표시: 주 전시실 오른쪽 끝의 벽걸이 함을 기단+통유리 대형 진열장으로 교체.
  d.wallCases=d.wallCases.filter(c=>c.id!=='gallery-hanging-case-690');
  d.glassCases=[{id:'gallery-end-showcase',a:[690+.22/d.scale,155],b:[690+.22/d.scale,195],inward:[1,0],depth:1.15,baseHeight:.45,top:d.columns.find(c=>c.id==='gallery-pier-3').height,room:'long',evidence:'사용자 붉은 표시: 기둥 상단 높이까지 통유리. 돌출1.15, 옆 구획까지 통로 약2.89 유지'}];
@@ -189,6 +191,13 @@
  d.walls.find(w=>w.id==='planned-entry').inset=[0,-1];
  // 남측 외벽의 실내 면에서 끝내어 전실 프레임이 외벽을 관통하지 않게 한다.
  d.frames.find(f=>f.id==='entrance-glass-south').b=[205,496-(d.wallThickness+.055)/d.scale];
+ // 사용자 표시: 남측 유리의 첫 칸을 열고 안내 테이블을 같은 한 칸만큼 아래로 이동.
+ const entranceSouth=d.frames.find(f=>f.id==='entrance-glass-south');
+ const entranceBay=(entranceSouth.b[1]-entranceSouth.a[1])/entranceSouth.divisions;
+ entranceSouth.a=[205,entranceSouth.a[1]+entranceBay];entranceSouth.divisions=2;
+ for(const item of d.detailBoxes.filter(p=>p.id.startsWith('reception-')))item.at[1]+=entranceBay;
+ d.entranceClearance.doorB=[...entranceSouth.a];
+ d.entranceClearance.max[1]=entranceSouth.a[1]-4;
  d.walls.find(w=>w.id==='entrance-transom').b=[205,496-d.wallThickness/d.scale];
  // 사용자 빨간 테두리: 체험마루 남측을 따라 넓힌 야외 마당과 낮은 경계벽.
  d.eyeHeight=1.575;
@@ -209,6 +218,65 @@
  for(const room of d.rooms){if(roomNames[room.id])room.name=roomNames[room.id];room.entryAt=entryPoints[room.id];}
  d.unresolved=d.unresolved.filter(s=>!s.includes('전시품·전시대'));
  d.unresolved.push('전시대·입구 책상·활 모양 천장·동선 아치를 추가. 전시품과 인쇄물은 제외. 위치·곡률·개수는 관찰에 따른 근사이며 실측 복제는 아님');
+ // 족자 설치 예정 통로: 렌더링하지 않는 이동 차단면.
+ d.navigationBarriers=[{id:'scroll-passage-blocker',a:[400,210],b:[400,251],height:2.8,thickness:.18}];
+ const circle=(x,z,r)=>Array.from({length:48},(_,i)=>[x+Math.cos(i*Math.PI/24)*r,z+Math.sin(i*Math.PI/24)*r]);
+ d.detailExtrusions.push(
+  {id:'planned-round-table-top',polygon:circle(910,325,26),bottom:.75,height:.09,color:[.52,.33,.18],room:'planned'},
+  {id:'planned-round-table-pedestal',polygon:circle(910,325,8),bottom:.08,height:.67,color:[.36,.24,.15],room:'planned'},
+  {id:'planned-round-table-foot',polygon:circle(910,325,16),bottom:.02,height:.06,color:[.29,.22,.16],room:'planned'}
+ );
+ d.rooms.find(r=>r.id==='planned').entryAt=[910,280];
+ // 사용자 표시 세 곳: 상부에 매단 얇은 가림막. 아래는 바닥/상판에서 띄운다.
+ for(const table of d.galleryTables){
+  d.detailBoxes.push({id:table.id+'-hanging-screen',at:[(table.a[0]+table.b[0])/2,175],bottom:table.height+.20,size:[(table.b[0]-table.a[0])*d.scale,2.48-table.height-.20,.035],color:[.82,.81,.76],room:'long'});
+ }
+ const scrollWall=d.walls.find(w=>w.id==='gallery-transition'),scrollOpening=scrollWall.openings[0];
+ const scrollEnds=[scrollOpening.from,scrollOpening.to].map(t=>scrollWall.a.map((v,i)=>v+(scrollWall.b[i]-v)*t));
+ d.detailBoxes.push({id:'gallery-door-hanging-screen',at:[400,(scrollEnds[0][1]+scrollEnds[1][1])/2],bottom:.25,size:[.035,scrollOpening.height-.25,Math.abs(scrollEnds[1][1]-scrollEnds[0][1])*d.scale],color:[.82,.81,.76],room:'long'});
+ // 사방의 여백을 남기고 보 아래에 두 가닥으로 매단다. 기존 하부 간격은 유지.
+ for(const screen of d.detailBoxes.filter(b=>b.id.endsWith('-hanging-screen'))){
+  const axis=screen.size[0]>screen.size[2]?0:2,topGap=.18,sideGap=.12;
+  screen.size[axis]-=sideGap*2;
+  screen.size[1]-=topGap;
+  const top=screen.bottom+screen.size[1];
+  for(const sign of [-1,1]){
+   const at=[...screen.at];at[axis===0?0:1]+=sign*screen.size[axis]*.32/d.scale;
+   d.detailBoxes.push({id:screen.id+'-wire-'+(sign<0?'left':'right'),at,bottom:top,size:[.012,topGap,.012],color:[.30,.32,.31],room:'long'});
+  }
+ }
+ // 빈 벽걸이 액자: 좌표는 벽 표면, inward는 관람 공간 방향. 후속 사진도 이 목록에 추가.
+ d.wallArtFrames=[
+  {id:'entry-partition-frame',a:[57,318],b:[145,318],inward:[0,1],bottom:.65,top:2.35,room:'bow'},
+  {id:'lobby-partition-frame',a:[216,318],b:[284,318],inward:[0,1],bottom:.45,top:2.40,room:'bow'},
+  {id:'central-platform-frame',a:[442-.08/d.scale,329],b:[442-.08/d.scale,402],inward:[-1,0],bottom:.65,top:2.35,room:'bow'},
+  {id:'arch-cabinet-frame',a:[400-.22/d.scale,260],b:[400-.22/d.scale,298],inward:[-1,0],bottom:1.48,top:2.62,room:'long'},
+  {id:'video-end-frame',a:[36+d.wallThickness/d.scale,235],b:[36+d.wallThickness/d.scale,292],inward:[1,0],bottom:.50,top:2.42,room:'video'},
+  {id:'video-partition-frame',a:[52,305],b:[108,305],inward:[0,-1],bottom:.40,top:2.42,room:'video'},
+  {id:'gallery-west-entry-frame',a:[270+d.wallThickness/d.scale,145],b:[270+d.wallThickness/d.scale,211],inward:[1,0],bottom:.40,top:2.45,room:'long'},
+  {id:'corridor-east-exit-frame',a:[1120-d.wallThickness/d.scale,188],b:[1120-d.wallThickness/d.scale,241],inward:[-1,0],bottom:.35,top:2.45,room:'link'},
+  {id:'donated-east-long-frame',a:[1145-d.wallThickness/d.scale,270],b:[1145-d.wallThickness/d.scale,365],inward:[-1,0],bottom:1.45,top:2.50,room:'donated'}
+ ];
+ d.curvedArtFrames=[{id:'video-curved-wall-frame',path:[[150,296.5],[164,298.5],[178,300],[193,300.6],[208,300],[222,298.5],[236,296.5]],bottom:.60,top:2.35,room:'video'}];
+ // 로비 남측 외벽의 긴 매입 전시부. 외곽선은 유지하고 실내 쪽 벽 두께를 확보한다.
+ const lobbySouth=d.shell.find(w=>w.id==='shell-bow-south');
+ // 출입문 주변은 기존 두께를 유지해 12→27의 대각 통과 폭을 보존한다.
+ lobbySouth.b=[490,496];
+ for(const opening of lobbySouth.openings){opening.from*=516/62;opening.to*=516/62;}
+ d.shell.push(
+  {id:'shell-lobby-recess',a:[490,496],b:[210,496],inset:[0,-1],thickness:.50,room:'bow',openings:[{from:0,to:1,sill:.35,height:2.45,kind:'recess',recessDirection:[0,1],note:'외부로 뚫리지 않는 뒤판 포함 매입 전시대'}]},
+  {id:'shell-lobby-south-tail',a:[210,496],b:[36,496],inset:[0,-1],room:'bow'}
+ );
+ const southSections=d.shell.splice(-2);
+ d.shell.splice(d.shell.indexOf(lobbySouth)+1,0,...southSections);
+ d.envelope=d.shell.map(w=>[...w.a]);
+ // 사용자 V/F: 기획전시실 남측 매입 유리 전시부와 복도 북측에서 보는 액자.
+ const plannedSouth=d.shell.find(w=>w.id==='shell-planned-south');
+ plannedSouth.thickness=.50;
+ plannedSouth.openings=[{from:.10,to:.90,sill:.60,height:2.45,kind:'recess',recessDirection:[0,1],glazed:true,note:'사용자 V: 막힌 뒤벽과 전면 유리를 갖춘 매입형 전시대'}];
+ d.wallArtFrames.push({id:'planned-corridor-frame',a:[800,256-d.wallThickness/d.scale],b:[857,256-d.wallThickness/d.scale],inward:[0,-1],bottom:.40,top:2.45,room:'link'});
+ // 실감형 체험장 북측 벽의 멀티미디어 모니터: 얇은 검정 본체만 배치.
+ d.detailBoxes.push({id:'immersive-multimedia-monitor',at:[1004,24+(d.wallThickness+.03+.005)/d.scale],bottom:.75,size:[3.05,1.52,.06],color:[.025,.028,.03],room:'immersive'});
 })();
 
 
