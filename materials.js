@@ -8,6 +8,5 @@ window.MuseumMaterials={
   if(['wall','structure','ceiling'].includes(p.group))return 2;
   return 0;
  },
- floorColor:[.43,.49,.52],wallColor:[.89,.885,.86],
  evidence:'VR 로비, 기마상 주변, 경기감영도 벽, 기증전시실 내부 관찰: 회청색 미세 점상 바닥, 밝은 도장 벽, 갈색 목재. 원본 재질 스캔이 아닌 절차적 근사.'
 };

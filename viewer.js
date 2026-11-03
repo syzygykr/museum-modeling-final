@@ -10,7 +10,7 @@
     const initialEntry=MuseumGeometry.point([125,430]); // 사용자 체크 위치: 서측 입구 대기 공간
     let flight=null;
     function cancelFlight(){flight=null;controls.state.transitioning=false;}
-    const controls=MuseumControls(canvas,{onHome:()=>home(),onInput:()=>{selected='free';sync();},onModeChange:()=>{cancelFlight();selected='free';sync();},initialInterior:{eye:[initialEntry[0],1.575,initialEntry[1]],yaw:Math.atan2(125-205,430-366.5)},move:collision.move,spawn:collision.spawn});
+    const controls=MuseumControls(canvas,{onHome:()=>home(),onInput:()=>{selected='free';sync();},onModeChange:()=>{cancelFlight();selected='free';sync();},initialInterior:{eye:[initialEntry[0],1.575,initialEntry[1]],yaw:Math.atan2(125-205,430-366.5)},spawn:collision.spawn});
     const program=D.program(gl,`#version 300 es
       layout(location=0) in vec3 aPos;layout(location=1) in vec3 aNormal;
       uniform mat4 uModel,uVP;uniform mat3 uNormal;out vec3 vN;out vec3 vWorld;
@@ -70,7 +70,6 @@
     const lo=[Math.min(...points.map(p=>p[0])),Math.min(...points.map(p=>p[1]))],hi=[Math.max(...points.map(p=>p[0])),Math.max(...points.map(p=>p[1]))];
     const center=[(lo[0]+hi[0])/2,.5,(lo[1]+hi[1])/2],radius=Math.hypot(hi[0]-lo[0],hi[1]-lo[1])/2;
     let selected='orbit',lastCamera=null;
-    const fields=Object.fromEntries(['walls','frames','names','low','structure','glass','ceiling','details','displays'].map(id=>[id,{checked:!['low','ceiling'].includes(id)}]));
     const mobileControls=MuseumMobileControls(canvas,controls);
     const waypointControls=MuseumPointNavigation(canvas,controls,collision,model,destination=>{
       const start=lastCamera||controls.camera(),pose={yaw:controls.state.yaw,pitch:controls.state.pitch,fov:controls.state.fov};
@@ -85,7 +84,6 @@
     function preset(name){
       cancelFlight();
       lastCamera=null;
-      if(name==='orbit'){home();return;}
       const poses={top:[0,1,0]};
       const v=poses[name];if(!v)return;
       let target=[...center],distance=radius*1.8;
@@ -110,29 +108,19 @@
         mobileControls.reset();controls.clear();
         flight={start,end:controls.camera(),began:performance.now(),duration:550};controls.state.transitioning=true;
       });
-      return {el,p,room:room.id};
+      return {el,p};
     });
     gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);home();
-    function matrix(p){const m=M.create(),short=fields.low.checked&&p.group==='wall';M.translate(m,m,[p.position[0],short?p.position[1]*.25:p.position[1],p.position[2]]);M.rotateY(m,m,p.yaw||0);M.scale(m,m,[p.size[0],short?p.size[1]*.25:p.size[1],p.size[2]]);return m;}
+    function matrix(p){const m=M.create();M.translate(m,m,p.position);M.rotateY(m,m,p.yaw||0);M.scale(m,m,p.size);return m;}
     function draw(mesh,m,color,alpha=1,textured=false,surface=0){gl.uniformMatrix4fv(U.uModel,false,m);gl.uniformMatrix3fv(U.uNormal,false,M.normalFrom(m));gl.uniform3fv(U.uColor,color);gl.uniform1f(U.uAlpha,alpha);gl.uniform1i(U.uSurface,surface);gl.uniform1i(U.uFloorTexture,textured&&woodReady?1:0);gl.bindVertexArray(mesh.vao);gl.drawElements(gl.TRIANGLES,mesh.count,gl.UNSIGNED_SHORT,0);}
-    function visible(p){if(selected==='gallery'&&!['long','immersive'].includes(p.room))return false;return (p.group!=='wall'||fields.walls.checked)&&(p.group!=='frame'||fields.frames.checked)&&(p.group!=='structure'||fields.structure.checked)&&(p.group!=='glass'||fields.glass.checked)&&(p.group!=='details'||fields.details.checked)&&(!['displays','displayGlass'].includes(p.group)||fields.displays.checked)&&(p.group!=='displayGlass'||fields.glass.checked);}
-    let surfaceKey='',surfaceStats=null;
-    function prepareSurfaces(){
-      const key=[selected==='gallery',...['walls','frames','structure','glass','details','displays','ceiling','low'].map(k=>fields[k].checked)].join('/');
-      if(key===surfaceKey)return;
-      const floors=model.floors.filter(p=>p.group!=='ceiling'||fields.ceiling.checked);
-      const parts=model.parts.filter(visible).map(p=>fields.low.checked&&p.group==='wall'?{...p,position:p.position.map((v,i)=>i===1?v*.25:v),size:p.size.map((v,i)=>i===1?v*.25:v)}:p);
-      const result=MuseumSurfaces.resolve([...floors,...parts]);
-      for(const p of [...model.floors,...model.parts]){
-        p.renderGpu?.dispose();p.renderGpu=null;
-        const mesh=result.meshes.get(p.id);if(mesh)p.renderGpu=D.upload(gl,mesh);
-      }
-      surfaceStats={trimmed:result.trimmed,removedArea:result.removedArea};surfaceKey=key;
+    const result=MuseumSurfaces.resolve([...model.floors.filter(p=>p.group!=='ceiling'),...model.parts]);
+    for(const p of [...model.floors,...model.parts]){
+      const mesh=result.meshes.get(p.id);if(mesh)p.renderGpu=D.upload(gl,mesh);
     }
+    const surfaceStats={trimmed:result.trimmed,removedArea:result.removedArea};
     D.loop((now,dt)=>{
       controls.update(dt);
       mobileControls.update(dt);
-      prepareSurfaces();
       const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2),w=Math.max(1,Math.round(r.width*dpr)),h=Math.max(1,Math.round(r.height*dpr));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;}
       gl.viewport(0,0,w,h);gl.clearColor(.91,.925,.90,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
       let camera=controls.camera();
@@ -150,14 +138,14 @@
       gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,woodTexture);gl.uniform1i(U.uWood,0);gl.uniform3fv(U.uEye,camera.eye);gl.uniform4fv(U.uWoodBounds,[...woodMin,...woodMax]);gl.uniform2fv(U.uWoodTile,woodRegion.tileSize);
       gl.uniform4fv(U.uGrassBounds,[...MuseumGeometry.point([492,480]),...MuseumGeometry.point([900,584])]);gl.uniform2fv(U.uGrassNotch,MuseumGeometry.point([552,496]));
       for(const f of model.floors){if(!f.renderGpu)continue;draw(f.renderGpu,identity,f.color,1,f.group==='floor',MuseumMaterials.classify(f));}
-      for(const p of model.parts){if(['glass','displayGlass'].includes(p.group)||!visible(p))continue;draw(p.renderGpu,matrix(p),p.color,1,false,MuseumMaterials.classify(p));}
+      for(const p of model.parts){if(['glass','displayGlass'].includes(p.group))continue;draw(p.renderGpu,matrix(p),p.color,1,false,MuseumMaterials.classify(p));}
       // 얇은 유리판은 불투명 부재 뒤에, 카메라에서 먼 순서로 그린다.
       const distance=p=>p.position.reduce((s,v,i)=>s+(v-camera.eye[i])**2,0);
       gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(false);
-      for(const p of model.parts.filter(p=>['glass','displayGlass'].includes(p.group)&&visible(p)).sort((a,b)=>distance(b)-distance(a)))draw(p.renderGpu,matrix(p),p.color,p.alpha);
+      for(const p of model.parts.filter(p=>['glass','displayGlass'].includes(p.group)).sort((a,b)=>distance(b)-distance(a)))draw(p.renderGpu,matrix(p),p.color,p.alpha);
       gl.depthMask(true);gl.disable(gl.BLEND);
       waypointControls.update(vp,r);
-      for(const {el,p,room} of labels){const anchor=controls.state.mode==='interior'?[p[0],1.85,p[2]]:p,clip=[0,1,2,3].map(i=>vp[i]*anchor[0]+vp[4+i]*anchor[1]+vp[8+i]*anchor[2]+vp[12+i]),x=clip[0]/clip[3],y=clip[1]/clip[3];el.hidden=(selected==='gallery'&&!['long','immersive'].includes(room))||!fields.names.checked||clip[3]<=0||Math.abs(x)>1||Math.abs(y)>1;el.disabled=controls.state.mode!=='exterior'||controls.state.orthographic;el.style.left=(x*.5+.5)*r.width+'px';el.style.top=(-y*.5+.5)*r.height+'px';}
+      for(const {el,p} of labels){const anchor=controls.state.mode==='interior'?[p[0],1.85,p[2]]:p,clip=[0,1,2,3].map(i=>vp[i]*anchor[0]+vp[4+i]*anchor[1]+vp[8+i]*anchor[2]+vp[12+i]),x=clip[0]/clip[3],y=clip[1]/clip[3];el.hidden=clip[3]<=0||Math.abs(x)>1||Math.abs(y)>1;el.disabled=controls.state.mode!=='exterior'||controls.state.orthographic;el.style.left=(x*.5+.5)*r.width+'px';el.style.top=(-y*.5+.5)*r.height+'px';}
     });
     window.MuseumViewer={gl,model,controls,home,groundNavigation:waypointControls,partMatrix:matrix,get camera(){return lastCamera;},get surfaceStats(){return surfaceStats;},get woodReady(){return woodReady;}};
   } catch(e){error.hidden=false;error.textContent=e.message;console.error(e);}

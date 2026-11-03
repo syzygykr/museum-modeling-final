@@ -11,7 +11,6 @@
   {id:'entrance-glass-north',a:[205,318],b:[205,350],height:2.5,divisions:1,glazed:true,room:'bow',evidence:'상단·내부 캠 대조: 표찰 벽 쪽 유리 전실. 남쪽 책상과 문 위치를 함께 대응'},
   {id:'entrance-glass-south',a:[205,383],b:[205,496],height:2.5,divisions:3,glazed:true,room:'bow',evidence:'상단·내부 캠 대조: 문 남쪽에 안내 책상. 유리 전실 전체 꺾임은 별도 확인 필요'}
  );
- d.entranceClearance={min:[170,354],max:[242,379],doorA:[205,350],doorB:[205,383]};
  d.walls.push({id:'entrance-transom',a:[205,318],b:[205,496],bottom:2.5,height:2.8,thickness:.14,room:'bow',evidence:'기존 유리 전실의 상부 연결부. 출입구 아래는 개방 유지'});
  d.detailArches=[{id:'video-route-arch',a:[294,305],b:[400,305],spring:2.18,rise:.38,depth:.14,thickness:.14,posts:true,room:'bow',evidence:'하향 90도 회전한 구분벽 끝 (400,305)에 아치 기둥을 맞춰 직각 접합'}];
  d.detailRibbons=[];
@@ -64,7 +63,6 @@
   d.niches.push({id:'gallery-tall-wall-'+i,a:[ends[0],29],b:[ends[1],29],inward:[0,1],depth:.65,sill:.25,top:2.50,room:'long',evidence:'첨부 내부 사진 3: 외벽 쪽 긴 받침과 상하로 긴 진열 공간. 낮은 독립 유리 상자로 표현하지 않음'});
  }
  // 오른쪽 끝 (400,175)을 고정한 하향 90도 회전: (x,z) → (400+z-175,175+400-x).
- d.galleryTransitionAlignment={pivot:[400,175],oldStart:[270,175],newStart:[400,305],degrees:-90};
  d.walls.push({id:'gallery-transition',a:[400,305],b:[400,175],height:2.8,thickness:.18,room:'long',evidence:'사용자 빨간 선 지시: 오른쪽 끝을 고정하고 문·진열부를 아래로 90도 회전. 문짝·족자 없음',openings:[{from:.42,to:.73,height:2.30,kind:'opening',note:'회전 전과 동일한 폭과 상대 위치의 열린 문'}]});
  d.niches.push({id:'gallery-transition-display',a:[405,299],b:[405,257],inward:[1,0],depth:.42,sill:.45,top:2.30,room:'long',evidence:'문과 같은 기준점으로 90도 회전한 빈 세로 전시대. 높이·폭·깊이 유지'});
  d.beams.push({id:'gallery-to-bow-joint',a:[400,305],b:[400,310],bottom:2.42,height:.11,thickness:.14,evidence:'회전한 구분벽·아치 기둥과 기존 하부 격자 북측 보 사이의 짧은 접합부'});
@@ -99,7 +97,6 @@
  const entry=d.walls.find(w=>w.id==='donated-entry');
  entry.openings=[{from:(turn([1145,274.6])[0]-980)/165,to:(turn([1145,312])[0]-980)/165,height:2.4,kind:'opening',note:'첨부 평면 오른쪽 위 개방부를 반시계 90도 정합한 중앙 복도 방향 출입구. VR 문틀 너머 복도 확인'}];
  delete d.shell.find(w=>w.id==='shell-donated-east').openings;
- d.donatedAlignment={rotationDegrees:-90,entrySide:'north-central-corridor',sourceRightOpening:[274.6,312]};
  d.walls.push({id:'bow-worktop-backing',a:[442,320],b:[442,410],height:2.55,thickness:.16,room:'bow',evidence:'사용자 1번 빨간 선 지시: 벽과 작업대를 왼쪽으로 이동. 이전 x=478 배치는 폐기'});
  // 근접 사진의 벽 부착형 작업대. 동측 두 앞 모서리만 둥글게 처리.
  function roundedFront(back,front,north,south,r){
@@ -127,7 +124,6 @@
  d.rooms.push({id:'immersive',name:'실감형체험장',color:[.67,.70,.73],polygon:[[818,24],[970,24],[970,118],[1056,118],[1056,175],[818,175]],note:'기획전시실 앞을 흰 벽으로 구분한 별도 공간. 서측 열린 출입구, 전면 벽의 빈 전시 홈. 치수는 사진 대응 근사'});
  d.niches.find(n=>n.id==='gallery-tall-wall-3').room='immersive';
  d.shell.find(w=>w.id==='shell-projection').room='immersive';
- d.immersiveBounds={west:818,north:24,south:175,eastReturn:1056};
  // 사용자 빨간 선: 북동측 빈 꺾임을 채워 체험장 전체를 직사각형으로 확장.
  d.shell.find(w=>w.id==='shell-north').b=[1056,24];
  Object.assign(d.shell.find(w=>w.id==='shell-projection'),{a:[1056,24],b:[1056,118],evidence:'사용자 공간 확장 지시: 직사각 체험장 동측 투사벽으로 이동'});
@@ -196,8 +192,6 @@
  const entranceBay=(entranceSouth.b[1]-entranceSouth.a[1])/entranceSouth.divisions;
  entranceSouth.a=[205,entranceSouth.a[1]+entranceBay];entranceSouth.divisions=2;
  for(const item of d.detailBoxes.filter(p=>p.id.startsWith('reception-')))item.at[1]+=entranceBay;
- d.entranceClearance.doorB=[...entranceSouth.a];
- d.entranceClearance.max[1]=entranceSouth.a[1]-4;
  d.walls.find(w=>w.id==='entrance-transom').b=[205,496-d.wallThickness/d.scale];
  // 사용자 빨간 테두리: 체험마루 남측을 따라 넓힌 야외 마당과 낮은 경계벽.
  d.eyeHeight=1.575;
