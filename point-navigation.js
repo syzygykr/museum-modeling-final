@@ -1,10 +1,16 @@
 /* 1인칭 방향 이동과 이동 가능한 대표점의 바닥 링 표시. */
-window.MuseumPointNavigation=function(canvas,controls,collision,model,onTravel){
+window.MuseumPointNavigation=function(canvas,controls,collision,model,onTravel,onSelect){
  const sub=(a,b)=>a.map((v,i)=>v-b[i]),dot=(a,b)=>a.reduce((s,v,i)=>s+v*b[i],0),cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
  const layer=document.createElement('div');layer.id='navigation-points';canvas.parentElement.append(layer);
  const points=MuseumNavigationPoints.map(data=>{const q=MuseumGeometry.point(data.at),eye=[q[0],controls.state.minEyeHeight,q[1]];if(collision.blocked(eye))throw Error('대표점이 장애물과 겹칩니다: '+data.name);return {...data,eye};});
  const directional=MuseumDirectionalNavigation(canvas,controls,collision,points,onTravel);
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('ground-rings');layer.append(svg);
+ const planButtons=points.map(point=>{
+  const button=document.createElement('button');button.type='button';button.className='plan-point';button.hidden=true;button.dataset.point=point.id;
+  button.setAttribute('aria-label',point.name+'으로 이동');button.title=point.name+'으로 이동';
+  button.addEventListener('click',()=>{if(controls.state.mode==='exterior'&&controls.state.orthographic)onSelect(point.eye);});
+  layer.append(button);return button;
+ });
  const rings=points.map(()=>{const p=document.createElementNS(svg.namespaceURI,'path');svg.append(p);return p;});
  function hitBox(o,d,p,max){const c=Math.cos(p.yaw),s=Math.sin(p.yaw),v=sub(o,p.position),origin=[c*v[0]-s*v[2],v[1],s*v[0]+c*v[2]],dir=[c*d[0]-s*d[2],d[1],s*d[0]+c*d[2]];let lo=0,hi=max;for(let i=0;i<3;i++){const h=p.size[i]/2;if(Math.abs(dir[i])<1e-9){if(Math.abs(origin[i])>h)return false;}else{let a=(-h-origin[i])/dir[i],b=(h-origin[i])/dir[i];if(a>b)[a,b]=[b,a];lo=Math.max(lo,a);hi=Math.min(hi,b);if(lo>hi)return false;}}return hi>.001&&lo<max-.002;}
 
@@ -12,12 +18,15 @@ window.MuseumPointNavigation=function(canvas,controls,collision,model,onTravel){
  function update(vp,r){
   directional.update();
   const active=controls.state.mode==='interior'&&!controls.state.transitioning;
-  layer.hidden=!active;
+  const plan=controls.state.mode==='exterior'&&controls.state.orthographic;
+  layer.hidden=!active&&!plan;
   svg.setAttribute('viewBox',`0 0 ${r.width} ${r.height}`);
   const origin=controls.camera().eye;
   for(const [index,point] of points.entries()){
    const ground=[point.eye[0],.025,point.eye[2]],v=sub(ground,origin),length=Math.hypot(...v),d=v.map(x=>x/length);
    const clip=[0,1,2,3].map(i=>vp[i]*ground[0]+vp[4+i]*ground[1]+vp[8+i]*ground[2]+vp[12+i]),x=clip[0]/clip[3],y=clip[1]/clip[3];
+   const button=planButtons[index];button.hidden=!plan||clip[3]<=0||Math.abs(x)>1||Math.abs(y)>1;
+   if(!button.hidden){button.style.left=(x*.5+.5)*r.width+'px';button.style.top=(-y*.5+.5)*r.height+'px';}
    const inView=active&&Math.hypot(point.eye[0]-origin[0],point.eye[2]-origin[2])>.45&&clip[3]>0&&Math.abs(x)<.98&&Math.abs(y)<.98;
    const occluded=active&&inView&&model.parts.some(p=>!['glass','displayGlass','grass'].includes(p.group)&&(p.mesh?hitMesh(origin,d,p,length):hitBox(origin,d,p,length)));
    const ring=rings[index];ring.style.display='none';

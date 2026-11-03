@@ -1,7 +1,7 @@
 /* PC·모바일 공용 방향키. 화면의 앞/뒤/좌/우를 수평면에 투영한다. */
 window.MuseumDirectionalNavigation=function(canvas,controls,collision,points,onTravel){
  const pad=document.createElement('nav');pad.className='direction-pad';pad.setAttribute('aria-label','이동 방향');canvas.parentElement.append(pad);
- const buttons=new Map();
+ const buttons=new Map(),keyDirections={KeyW:'forward',KeyA:'left',KeyS:'back',KeyD:'right'};
  function destination(direction){
   const origin=controls.camera().eye,yaw=controls.state.yaw;
   const forward=[-Math.sin(yaw),-Math.cos(yaw)],right=[Math.cos(yaw),-Math.sin(yaw)];
@@ -24,6 +24,16 @@ window.MuseumDirectionalNavigation=function(canvas,controls,collision,points,onT
   button.addEventListener('click',()=>{if(controls.state.mode!=='interior'||controls.state.transitioning)return;const point=destination(direction);if(point)onTravel(point.eye);});
   pad.append(button);buttons.set(direction,button);
  }
+ // 캔버스나 화살표에 포커스가 있어도 같은 버튼 이동 경로를 사용한다.
+ window.addEventListener('keydown',e=>{
+  const direction=keyDirections[e.code];
+  if(!direction||controls.state.mode!=='interior'||e.ctrlKey||e.metaKey||e.altKey||e.isComposing)return;
+  if(e.target?.closest?.('input,textarea,select,[contenteditable="true"],[role="textbox"]'))return;
+  e.preventDefault();e.stopPropagation();
+  if(e.repeat||controls.state.transitioning)return;
+  update();const button=buttons.get(direction);if(!button.disabled)button.click();
+ },true);
+ for(const [code,direction] of Object.entries(keyDirections))buttons.get(direction).setAttribute('aria-keyshortcuts',code.slice(3));
  let lastKey='',nextPoints=[];
  function update(){
   const interior=controls.state.mode==='interior';pad.hidden=!interior;

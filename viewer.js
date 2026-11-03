@@ -77,6 +77,8 @@
       const lengths=[0];for(let i=1;i<path.length;i++)lengths.push(lengths[i-1]+Math.hypot(...path[i].map((v,k)=>v-path[i-1][k])));
       controls.setMode('interior',destination);Object.assign(controls.state,pose);controls.clear();mobileControls.reset();
       flight={start,end:controls.camera(),began:performance.now(),duration:Math.min(1600,Math.max(380,lengths.at(-1)*65)),path,lengths};controls.state.transitioning=true;
+    },destination=>{
+      cancelFlight();controls.setMode('interior',destination);controls.clear();mobileControls.reset();lastCamera=null;
     });
     function sync(){const choice=controls.state.mode==='interior'?'interior':controls.state.orthographic?'plan':'orbit';document.querySelectorAll('[data-navigation]').forEach(b=>{const active=b.dataset.navigation===choice;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});}
     function home(){cancelFlight();lastCamera=null;const aspect=canvas.clientWidth/Math.max(1,canvas.clientHeight),fit=matchMedia('(pointer: coarse)').matches?Math.max(1,1.2/aspect):1;controls.setView({target:center,distance:radius*1.8*fit});selected='orbit';sync();}
@@ -97,17 +99,11 @@
       else if(b.dataset.navigation==='orbit')home();
       else controls.setMode('interior');
     }));
+    const minimap=MuseumMinimap(document.querySelector('aside'),model);
+    const labelVisibility=MuseumLabelVisibility(model);
     const labels=MuseumLayout.rooms.map(room=>{
-      const el=document.createElement('button');el.type='button';el.className='room-label';el.textContent=room.name;el.dataset.room=room.id;el.setAttribute('aria-label',room.name+'에서 1인칭으로 보기');document.querySelector('#labels').append(el);
+      const el=document.createElement('span');el.className='room-label';el.textContent=room.name;el.dataset.room=room.id;document.querySelector('#labels').append(el);
       const pts=room.polygon.map(MuseumGeometry.point),p=[pts.reduce((s,v)=>s+v[0],0)/pts.length,.12,pts.reduce((s,v)=>s+v[1],0)/pts.length];
-      el.addEventListener('click',()=>{
-        if(controls.state.mode!=='exterior'||controls.state.orthographic)return;
-        const start=lastCamera||controls.camera();
-        const entry=room.entryAt?MuseumGeometry.point(room.entryAt):[p[0],p[2]];
-        controls.setMode('interior',[entry[0],controls.state.minEyeHeight,entry[1]]);
-        mobileControls.reset();controls.clear();
-        flight={start,end:controls.camera(),began:performance.now(),duration:550};controls.state.transitioning=true;
-      });
       return {el,p};
     });
     gl.enable(gl.DEPTH_TEST);gl.disable(gl.CULL_FACE);home();
@@ -145,7 +141,8 @@
       for(const p of model.parts.filter(p=>['glass','displayGlass'].includes(p.group)).sort((a,b)=>distance(b)-distance(a)))draw(p.renderGpu,matrix(p),p.color,p.alpha);
       gl.depthMask(true);gl.disable(gl.BLEND);
       waypointControls.update(vp,r);
-      for(const {el,p} of labels){const anchor=controls.state.mode==='interior'?[p[0],1.85,p[2]]:p,clip=[0,1,2,3].map(i=>vp[i]*anchor[0]+vp[4+i]*anchor[1]+vp[8+i]*anchor[2]+vp[12+i]),x=clip[0]/clip[3],y=clip[1]/clip[3];el.hidden=clip[3]<=0||Math.abs(x)>1||Math.abs(y)>1;el.disabled=controls.state.mode!=='exterior'||controls.state.orthographic;el.style.left=(x*.5+.5)*r.width+'px';el.style.top=(-y*.5+.5)*r.height+'px';}
+      minimap.update(camera,controls.state,r);
+      for(const {el,p} of labels){const anchor=controls.state.mode==='interior'?[p[0],1.85,p[2]]:p,clip=[0,1,2,3].map(i=>vp[i]*anchor[0]+vp[4+i]*anchor[1]+vp[8+i]*anchor[2]+vp[12+i]),x=clip[0]/clip[3],y=clip[1]/clip[3];el.hidden=clip[3]<=0||Math.abs(x)>1||Math.abs(y)>1||(controls.state.mode==='interior'&&labelVisibility.countWalls(camera.eye,anchor)>1);el.style.left=(x*.5+.5)*r.width+'px';el.style.top=(-y*.5+.5)*r.height+'px';}
     });
     window.MuseumViewer={gl,model,controls,home,groundNavigation:waypointControls,partMatrix:matrix,get camera(){return lastCamera;},get surfaceStats(){return surfaceStats;},get woodReady(){return woodReady;}};
   } catch(e){error.hidden=false;error.textContent=e.message;console.error(e);}
